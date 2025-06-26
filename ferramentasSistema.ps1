@@ -178,6 +178,37 @@ function Verificar-SMART {
     Read-Host "`nPressione ENTER para voltar ao menu"
 }
 
+
+function Executar-Comando {
+    param (
+        [Parameter(Mandatory=$true)]
+        [string]$Comando,
+
+        [Parameter(Mandatory=$true)]
+        [string]$MensagemSucesso,
+
+        [Parameter(Mandatory=$true)]
+        [string]$MensagemProgresso
+    )
+
+    try {
+        Write-Host "`n$MensagemProgresso" -ForegroundColor Yellow
+        
+        # O comando Invoke-Expression executa uma string como se fosse um comando
+        Invoke-Expression -Command $Comando | Out-Null
+
+        Write-Host "`n✔️ $MensagemSucesso" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "`n❌ Ocorreu um erro ao executar o comando '$Comando'." -ForegroundColor Red
+        Write-Host "   Detalhes do erro: $($_.Exception.Message)" -ForegroundColor Red
+    }
+    finally {
+        # Uma pausa mais explícita para o usuário
+        Read-Host "`nPressione Enter para continuar..." | Out-Null
+    }
+}
+
 function Diagnostico-Rede {
     
     # O loop do-until garante que o menu seja exibido pelo menos uma vez
@@ -226,6 +257,7 @@ function Diagnostico-Rede {
         }
     } while ($escolhaREDE -ne "0")
 }
+
 
 function Reiniciar-WU {
     Clear-Host
