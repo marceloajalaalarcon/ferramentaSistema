@@ -231,7 +231,7 @@ function Diagnostico-Rede {
                 # dentro de uma única chamada de função, evitando as pausas intermediárias.
                 $comandosCombinados = "ipconfig /release; ipconfig /renew; ipconfig /flushdns"
                 
-                Executar-Comando -Comando $comandosCombinados -MensagemProgresso "Iniciando renovação completa das configurações de rede..." -MensagemSucesso "Configurações de rede renovadas com sucesso!"
+                Diagnostico-Rede-Debug -Comando $comandosCombinados -MensagemProgresso "Iniciando renovação completa das configurações de rede..." -MensagemSucesso "Configurações de rede renovadas com sucesso!"
             }
             "2" {
                 Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado."
@@ -256,6 +256,7 @@ function Diagnostico-Rede {
         }
     } while ($escolhaREDE -ne "0")
 }
+
 
 function Reiniciar-WU {
     Clear-Host
