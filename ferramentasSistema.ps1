@@ -227,12 +227,11 @@ function Diagnostico-Rede {
 
         switch ($escolhaREDE) {
             "1" {
-                # Para esta opção, executamos múltiplos comandos
-                Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado."
-                Diagnostico-Rede-Debug -Comando "ipconfig /renew" -MensagemProgresso "Renovando concessão de IP..." -MensagemSucesso "IP Renovado."
-                Diagnostico-Rede-Debug -Comando "ipconfig /flushdns" -MensagemProgresso "Limpando cache DNS..." -MensagemSucesso "Cache DNS limpo."
-                Write-Host "`n✅ Diagnóstico completo realizado com sucesso!" -ForegroundColor Green
-                Read-Host "`nPressione Enter para continuar..." | Out-Null
+                # Juntamos os comandos com ";" para serem executados em sequência
+                # dentro de uma única chamada de função, evitando as pausas intermediárias.
+                $comandosCombinados = "ipconfig /release; ipconfig /renew; ipconfig /flushdns"
+                
+                Executar-Comando -Comando $comandosCombinados -MensagemProgresso "Iniciando renovação completa das configurações de rede..." -MensagemSucesso "Configurações de rede renovadas com sucesso!"
             }
             "2" {
                 Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado."
@@ -257,24 +256,6 @@ function Diagnostico-Rede {
         }
     } while ($escolhaREDE -ne "0")
 }
-
-
-# function Diagnostico-Rede {
-#     Clear-Host
-#     Write-Log "🌐 Executando diagnóstico de rede..." -ForegroundColor Yellow
-#     try {
-#         Write-Log "Liberando concessão de IP..."
-#         ipconfig /release | Out-Null
-#         Write-Log "Renovando concessão de IP..."
-#         ipconfig /renew | Out-Null
-#         Write-Log "Limpando cache DNS..."
-#         ipconfig /flushdns | Out-Null
-#         Write-Log "`n✔️ Diagnóstico de rede concluído com sucesso." -ForegroundColor Green
-#     } catch {
-#         Write-Log "`n❌ Ocorreu um erro durante o diagnóstico de rede: $($_.Exception.Message)" -ForegroundColor Red
-#     }
-#     Read-Host "`nPressione ENTER para voltar ao menu"
-# }
 
 function Reiniciar-WU {
     Clear-Host
