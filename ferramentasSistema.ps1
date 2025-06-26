@@ -188,14 +188,17 @@ function Diagnostico-Rede-Debug {
         [string]$MensagemSucesso,
 
         [Parameter(Mandatory=$true)]
-        [string]$MensagemProgresso
+        [string]$MensagemProgresso,
+        
+        [Parameter(Mandatory=$true)]
+        [boolean]$PausarAoFinal = $true
     )
 
     try {
         Write-Host "`n$MensagemProgresso" -ForegroundColor Yellow
         
         # O comando Invoke-Expression executa uma string como se fosse um comando
-        Invoke-Expression -Command $Comando | Out-Null
+        Invoke-Expression -Command $Comando
 
         Write-Host "`n✔️ $MensagemSucesso" -ForegroundColor Green
     }
@@ -205,7 +208,10 @@ function Diagnostico-Rede-Debug {
     }
     finally {
         # Uma pausa mais explícita para o usuário
-        Read-Host "`nPressione Enter para continuar..." | Out-Null
+        if($PausarAoFinal) {
+            Read-Host "`nPressione Enter para continuar..." | Out-Null
+        }
+        
     }
 }
 
@@ -227,24 +233,40 @@ function Diagnostico-Rede {
 
         switch ($escolhaREDE) {
             "1" {
-                # Juntamos os comandos com ";" para serem executados em sequência
-                # dentro de uma única chamada de função, evitando as pausas intermediárias.
-                $comandosCombinados = "ipconfig /release; ipconfig /renew; ipconfig /flushdns"
-                
-                Diagnostico-Rede-Debug -Comando $comandosCombinados -MensagemProgresso "Iniciando renovação completa das configurações de rede..." -MensagemSucesso "Configurações de rede renovadas com sucesso!"
+                # Executa cada comando sem pausar
+                Diagnostico-Rede-Debug  -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado." -PausarAoFinal $false
+                Diagnostico-Rede-Debug  -Comando "ipconfig /renew" -MensagemProgresso "Renovando concessão de IP..." -MensagemSucesso "IP Renovado." -PausarAoFinal $false
+                Diagnostico-Rede-Debug  -Comando "ipconfig /flushdns" -MensagemProgresso "Limpando cache DNS..." -MensagemSucesso "Cache DNS limpo." -PausarAoFinal $false
+            
+                # Adiciona uma mensagem final e uma única pausa
+                Write-Host "`n✅ Feito!" -ForegroundColor Green
+                Read-Host "`nPressione Enter para continuar..." | Out-Null
             }
             "2" {
-                Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado."
-                Diagnostico-Rede-Debug -Comando "ipconfig /renew" -MensagemProgresso "Solicitando novo IP..." -MensagemSucesso "Reset de IP feito."
+                Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP Liberado." -PausarAoFinal $false
+                Diagnostico-Rede-Debug -Comando "ipconfig /renew" -MensagemProgresso "Solicitando novo IP..." -MensagemSucesso "Reset de IP feito." -PausarAoFinal $false
+                
+                # Adiciona uma mensagem final e uma única pausa
+                Write-Host "`n✅ Feito!" -ForegroundColor Green
+                Read-Host "`nPressione Enter para continuar..." | Out-Null
             }
             "3" {
-                Diagnostico-Rede-Debug -Comando "ipconfig /flushdns" -MensagemProgresso "Limpando cache DNS..." -MensagemSucesso "Cache DNS limpo."
+                Diagnostico-Rede-Debug -Comando "ipconfig /flushdns" -MensagemProgresso "Limpando cache DNS..." -MensagemSucesso "Cache DNS limpo." -PausarAoFinal $false
+
+                # Adiciona uma mensagem final e uma única pausa
+                Read-Host "`nPressione Enter para continuar..." | Out-Null
             }
             "4" {
-                Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Liberando IP atual..." -MensagemSucesso "IP atual liberado."
+                Diagnostico-Rede-Debug -Comando "ipconfig /release" -MensagemProgresso "Desconectar IP..." -MensagemSucesso "IP atual liberado." -PausarAoFinal $false
+                
+                # Adiciona uma mensagem final e uma única pausa
+                Read-Host "`nPressione Enter para continuar..." | Out-Null
             }
             "5" {
-                Diagnostico-Rede-Debug -Comando "ipconfig /renew" -MensagemProgresso "Renovando concessão de IP..." -MensagemSucesso "IP renovado."
+                Diagnostico-Rede-Debug -Comando "ipconfig /renew" -MensagemProgresso "Reconectar IP..." -MensagemSucesso "IP renovado." -PausarAoFinal $false
+            
+                # Adiciona uma mensagem final e uma única pausa
+                Read-Host "`nPressione Enter para continuar..." | Out-Null
             }
             "0" {
                 Write-Host "`nSaindo do menu de rede..." -ForegroundColor Gray
