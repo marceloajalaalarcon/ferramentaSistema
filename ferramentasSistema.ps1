@@ -69,12 +69,12 @@ function Mostrar-Menu {
     Write-Host "[5] 🧪 Verificar status SMART do disco"
     Write-Host
     Write-Host "--- REDE E ATUALIZAÇÕES ---" -ForegroundColor Green
-    Write-Host "[6] 🌐 Diagnóstico de rede"
-    Write-Host "[7] ♻️  Reiniciar componentes do Windows Update"
+    Write-Host "[6] 🌐 Cofiguração de rede"
+    Write-Host "[7] ♻️ Reiniciar componentes do Windows Update"
     Write-Host
     Write-Host "--- OUTROS ---" -ForegroundColor Green
     Write-Host "[8] 📅 Agendar tarefa de limpeza diária"
-    Write-Host "[9] 🖨️  Limpar fila de impressão"
+    Write-Host "[9] 🖨️ Limpar fila de impressão"
     Write-Host
     Write-Host "--- SAIR ---"
     Write-Host "[0] ❌ Sair"
@@ -180,20 +180,87 @@ function Verificar-SMART {
 
 function Diagnostico-Rede {
     Clear-Host
-    Write-Log "🌐 Executando diagnóstico de rede..." -ForegroundColor Yellow
-    try {
-        Write-Log "Liberando concessão de IP..."
-        ipconfig /release | Out-Null
-        Write-Log "Renovando concessão de IP..."
-        ipconfig /renew | Out-Null
-        Write-Log "Limpando cache DNS..."
-        ipconfig /flushdns | Out-Null
-        Write-Log "`n✔️ Diagnóstico de rede concluído com sucesso." -ForegroundColor Green
-    } catch {
-        Write-Log "`n❌ Ocorreu um erro durante o diagnóstico de rede: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "📅 MENU DE CONFIGURAÇÃO DE REDE" -ForegroundColor Cyan
+    Write-Host "`n[1] 🌐 Renovar Configurações de Rede (Liberar IP atual, Solicitar novo IP, Limpar cache DNS)" -ForegroundColor Yellow
+    Write-Host "[2] 🔁 Reset de IP (Liberar IP atual e Solicitar novo IP)" -ForegroundColor Yellow
+    Write-Host "[3] 🧹 Limpar DNS (Limpar cache DNS)" -ForegroundColor Yellow
+    Write-Host "[4] 📴 Desconectar IP (Liberar IP atual)" -ForegroundColor Yellow
+    Write-Host "[5] 📶 Reconectar IP (Solicitar novo IP)" -ForegroundColor Yellow
+    Write-Host "[0] ⬅️ Voltar ao menu principal" -ForegroundColor Gray
+
+    $escolhaREDE = Read-Host "`nEscolha uma opção"
+
+    switch ($escolhaREDE){
+        "1"{
+            try {
+                Write-Log "Liberando IP atual..." -ForegroundColor Yellow
+                ipconfig /release
+                Write-Log "Renovando concessão de IP..." -ForegroundColor Yellow
+                ipconfig /renew
+                Write-Log "Limpando cache DNS..." -ForegroundColor Yellow
+                ipconfig /flushdns
+                Write-Log "`n✔️ Configuração da rede feito" -ForegroundColor Green
+            } catch {
+                Write-Log "`n❌ Ocorreu um erro: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+        "2"{
+            try {
+                Write-Log "Liberando IP atual..." -ForegroundColor Yellow
+                ipconfig /release
+                Write-Log "Solicitando novo IP..." -ForegroundColor Yellow
+                ipconfig /renew
+                Write-Log "`n✔️ Reset de IP feito" -ForegroundColor Green
+            } catch {
+                Write-Log "`n❌ Ocorreu um erro: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+        "3"{
+            try {
+                Write-Log "Limpando cache DNS..." -ForegroundColor Yellow
+                ipconfig /flushdns
+                Write-Log "`n✔️ Cache DNS limpo" -ForegroundColor Green
+            } catch {
+                Write-Log "`n❌ Ocorreu um erro: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+        "4"{
+            try {
+                Write-Log "Liberando IP atual..." -ForegroundColor Yellow
+                ipconfig /release
+                Write-Log "`n✔️ IP atual Liberado" -ForegroundColor Green
+            } catch {
+                Write-Log "`n❌ Ocorreu um erro: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+        "5"{
+             try {
+                Write-Log "Renovando concessão de IP..." -ForegroundColor Yellow
+                ipconfig /renew
+                Write-Log "`n✔️ IP renovado" -ForegroundColor Green
+            } catch {
+                Write-Log "`n❌ Ocorreu um erro: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
     }
-    Read-Host "`nPressione ENTER para voltar ao menu"
 }
+
+# function Diagnostico-Rede {
+#     Clear-Host
+#     Write-Log "🌐 Executando diagnóstico de rede..." -ForegroundColor Yellow
+#     try {
+#         Write-Log "Liberando concessão de IP..."
+#         ipconfig /release | Out-Null
+#         Write-Log "Renovando concessão de IP..."
+#         ipconfig /renew | Out-Null
+#         Write-Log "Limpando cache DNS..."
+#         ipconfig /flushdns | Out-Null
+#         Write-Log "`n✔️ Diagnóstico de rede concluído com sucesso." -ForegroundColor Green
+#     } catch {
+#         Write-Log "`n❌ Ocorreu um erro durante o diagnóstico de rede: $($_.Exception.Message)" -ForegroundColor Red
+#     }
+#     Read-Host "`nPressione ENTER para voltar ao menu"
+# }
 
 function Reiniciar-WU {
     Clear-Host
