@@ -129,10 +129,6 @@ instabilidade do sistema. A responsabilidade pelo uso é inteiramente sua.
 --------------------------------------------------------------------------------
 4. CONFIGURAÇÃO INICIAL (LEIA COM ATENÇÃO)
 --------------------------------------------------------------------------------
-
-Para sua segurança, a ferramenta SEMPRE criará um Ponto de Restauração do
-Sistema antes de executar qualquer tarefa.
-
 A única escolha necessária é se você deseja que a ferramenta lembre do seu
 consentimento para não exibir esta tela nas próximas vezes.
 
