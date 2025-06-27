@@ -27,20 +27,163 @@ function Write-Log {
     )
     # Exibe a mensagem no console.
     Write-Host $Message -ForegroundColor $ForegroundColor
-    # (Opcional) Adiciona a mensagem a um arquivo de log.
-    # Add-Content -Path "Caminho\Para\Seu\Log.txt" -Value "$(Get-Date) - $Message"
 }
 
 #endregion
 
-#region Verificação de Privilégios e Configuração Inicial
 
-# 🚨 Verifica se o script está sendo executado como Administrador.
+# Função para verificar a presença de antivírus de terceiros.
+function Verificar-Antivirus {
+    try {
+        # Procura por produtos antivírus que NÃO sejam o Windows Defender.
+        $avList = Get-CimInstance -Namespace root\SecurityCenter2 -Class AntiVirusProduct | Where-Object { $_.displayName -notlike '*windows*' } | Select-Object -ExpandProperty displayName
+        
+        # Se encontrar algum, exibe um alerta.
+        if ($avList) {
+            Write-Host
+            Write-Host '🛡️ ALERTA: Antivírus de terceiro detectado!' -ForegroundColor White -BackgroundColor DarkRed
+            Write-Host "   Ele pode interferir em algumas operações do script." -ForegroundColor Yellow
+            Write-Host "   Antivírus encontrado: $($avList -join ', ')" -ForegroundColor Yellow
+            Write-Host
+            # Pausa para o usuário ler o alerta.
+            Read-Host "Pressione ENTER para continuar..."
+        }
+    }
+    catch {
+        # Ignora erros caso não consiga verificar (não é uma função crítica).
+    }
+}
+
+#region Verificação de Privilégios e Configuração Inicial
+# 🚨 Verificação de Privilégios
+
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]'Administrator')) {
-    Write-Log "⏫ Permissões de administrador necessárias. Reabrindo o script..." -ForegroundColor Yellow
-    # Reinicia o script com privilégios elevados.
-    Start-Process powershell.exe "-ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    
+    Write-Host "⏫ Permissões de administrador necessárias. Reabrindo o script..." -ForegroundColor Yellow
+    
+    # 1. .Defina AQUI o comando exato que você usa para executar o script
+    #    É CRUCIAL que este comando esteja correto.
+    $commandToRerun = "irm https://raw.githubusercontent.com/marceloajalaalarcon/ferramentaSistema/refs/heads/main/ferramentasSistema.ps1 | iex"
+
+    # 2. Codificamos o comando para Base64. 
+    #    Isso garante que ele seja passado para a nova janela do PowerShell sem erros de interpretação de caracteres.
+    #    Pense nisso como colocar o comando em um "envelope seguro".
+    $encodedCommand = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($commandToRerun))
+
+    # 3. Reinicia o PowerShell com privilégios elevados (-Verb RunAs) e passa o comando codificado.
+    #    O parâmetro -EncodedCommand é feito exatamente para isso.
+    Start-Process powershell.exe -ArgumentList "-EncodedCommand $encodedCommand" -Verb RunAs
+    
+    # 4. Encerra o script atual (o que não é admin).
     exit
+}
+# ======================================================================================================================
+
+function Mostrar-TermoDeUso {
+    # Esta função exibe os termos e o menu de opções, e retorna a escolha do usuário.
+    while ($true) {
+        Clear-Host
+        # O Here-String (@" "@) permite formatar textos longos de forma fácil.
+        $termo = @"
+================================================================================
+TERMO DE USO, TRANSPARÊNCIA E OPÇÕES INICIAIS
+================================================================================
+
+Olá! Seja bem-vindo à Ferramenta de Manutenção DuckDev.
+Autor: Marcelo Ajala Alarcon
+
+Esta ferramenta foi criada para simplificar e automatizar o acesso a
+utilitários de manutenção poderosos que já existem nativamente no seu Windows.
+O objetivo é ser transparente sobre cada ação executada.
+
+--------------------------------------------------------------------------------
+1. O PRINCÍPIO DA TRANSPARÊNCIA: O QUE A FERRAMENTA FAZ
+--------------------------------------------------------------------------------
+
+Este script não instala softwares de terceiros. Ele apenas executa comandos
+que você mesmo poderia digitar no Prompt de Comando ou PowerShell.
+
+* Ações Principais: sfc /scannow, DISM.exe /RestoreHealth, chkdsk.exe,
+  limpeza de arquivos temporários, reset de componentes do Windows Update, etc.
+
+--------------------------------------------------------------------------------
+2. OS RISCOS ENVOLVIDOS: SUA RESPONSABILIDADE COMO USUÁRIO
+--------------------------------------------------------------------------------
+
+Apesar de usar ferramentas nativas, qualquer operação de manutenção profunda
+oferece riscos, especialmente em sistemas personalizados ou com falhas de
+hardware pré-existentes.
+
+É ALTAMENTE RECOMENDADO QUE VOCÊ FAÇA UM BACKUP DE SEUS DADOS IMPORTANTES
+ANTES DE EXECUTAR QUALQUER OPÇÃO DE REPARO.
+
+--------------------------------------------------------------------------------
+3. O ACORDO: TERMO DE RESPONSABILIDADE
+--------------------------------------------------------------------------------
+
+Este software é fornecido "COMO ESTÁ", sem garantia de qualquer tipo.
+AO USAR ESTE SCRIPT, VOCÊ CONCORDA QUE O AUTOR (MARCELO AJALA ALARCON) NÃO
+SERÁ RESPONSABILIZADO por quaisquer danos, incluindo perda de dados ou
+instabilidade do sistema. A responsabilidade pelo uso é inteiramente sua.
+
+--------------------------------------------------------------------------------
+4. CONFIGURAÇÃO INICIAL (LEIA COM ATENÇÃO)
+--------------------------------------------------------------------------------
+
+Para sua segurança, a ferramenta SEMPRE criará um Ponto de Restauração do
+Sistema antes de executar qualquer tarefa.
+
+A única escolha necessária é se você deseja que a ferramenta lembre do seu
+consentimento para não exibir esta tela nas próximas vezes.
+
+"@
+        Write-Host $termo -ForegroundColor Yellow
+        Write-Host "================================================================================" -ForegroundColor Cyan
+        Write-Host "[1] Aceitar e Lembrar Consentimento (Recomendado)" -ForegroundColor Green
+        Write-Host "    (não mostra esta tela novamente)"
+        Write-Host
+        Write-Host "[2] Aceitar Apenas para Esta Sessão" -ForegroundColor Yellow
+        Write-Host "    (esta tela será exibida na próxima vez)"
+        Write-Host
+        Write-Host "[0] Recusar e Sair" -ForegroundColor Red
+        Write-Host
+        
+        $escolha = Read-Host "Digite sua escolha"
+
+        # O switch foi simplificado para refletir as novas opções.
+        switch ($escolha) {
+            '1' { 
+                # Prosseguir, salvar o consentimento
+                return @{ Action = 'Proceed'; SaveConsent = $true; } 
+            }
+            '2' { 
+                # Prosseguir, NÃO salvar o consentimento e criar o ponto de restauração.
+                return @{ Action = 'Proceed'; SaveConsent = $false; } 
+            }
+            '0' { 
+                # Sair do script.
+                return @{ Action = 'Exit'; SaveConsent = $false; } 
+            }
+            default {
+                Write-Host "`nOpção inválida. Por favor, tente novamente." -ForegroundColor Red
+                Start-Sleep -Seconds 2
+            }
+        }
+    }
+}
+
+# --- VERIFICAÇÃO DO TERMO DE USO E PONTO DE RESTAURAÇÃO ---
+$consentFile = Join-Path $env:APPDATA "DuckDevToolConsent.txt"
+if (-not (Test-Path $consentFile)) {
+    $userChoice = Mostrar-TermoDeUso
+    switch ($userChoice.Action) {
+        'Proceed' {
+            if ($userChoice.SaveConsent) { Set-Content -Path $consentFile -Value "Termos aceitos em $(Get-Date)" | Out-Null }
+        }
+        'Exit' {
+            Write-Host "`nVocê não aceitou os termos. O script será encerrado." -ForegroundColor Red; Start-Sleep -Seconds 3; exit
+        }
+    }
 }
 
 # Configura a janela do PowerShell.
@@ -48,6 +191,8 @@ $Host.UI.RawUI.WindowTitle = "🔧 Ferramenta de Manutenção do Sistema - DuckD
 $Host.UI.RawUI.ForegroundColor = "White"
 $Host.UI.RawUI.BackgroundColor = "DarkBlue"
 Clear-Host
+
+Verificar-Antivirus
 
 #endregion
 
@@ -76,7 +221,7 @@ function Mostrar-Menu {
     Write-Host "[8] 📅 Agendar tarefa de limpeza diária"
     Write-Host "[9] 🖨️ Limpar fila de impressão"
     Write-Host
-    Write-Host "--- SAIR ---"
+    Write-Host "--- SAIR ---" -ForegroundColor Red
     Write-Host "[0] ❌ Sair"
     Write-Host
 }
@@ -190,7 +335,7 @@ function Diagnostico-Rede-Debug {
         [Parameter(Mandatory=$true)]
         [string]$MensagemProgresso,
         
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory=$false)]
         [boolean]$PausarAoFinal = $true
     )
 
@@ -279,6 +424,23 @@ function Diagnostico-Rede {
     } while ($escolhaREDE -ne "0")
 }
 
+
+# function Diagnostico-Rede {
+#     Clear-Host
+#     Write-Log "🌐 Executando diagnóstico de rede..." -ForegroundColor Yellow
+#     try {
+#         Write-Log "Liberando concessão de IP..."
+#         ipconfig /release | Out-Null
+#         Write-Log "Renovando concessão de IP..."
+#         ipconfig /renew | Out-Null
+#         Write-Log "Limpando cache DNS..."
+#         ipconfig /flushdns | Out-Null
+#         Write-Log "`n✔️ Diagnóstico de rede concluído com sucesso." -ForegroundColor Green
+#     } catch {
+#         Write-Log "`n❌ Ocorreu um erro durante o diagnóstico de rede: $($_.Exception.Message)" -ForegroundColor Red
+#     }
+#     Read-Host "`nPressione ENTER para voltar ao menu"
+# }
 
 function Reiniciar-WU {
     Clear-Host
@@ -429,3 +591,34 @@ do {
 } while ($true)
 
 #endregion
+# SIG # Begin signature block
+# MIIFZwYJKoZIhvcNAQcCoIIFWDCCBVQCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
+# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU+1oSD1ITPKrY6lkWQFfwQjfs
+# hlKgggMEMIIDADCCAeigAwIBAgIQNpJ3aGZvmopKsMhVmpuZUDANBgkqhkiG9w0B
+# AQsFADAYMRYwFAYDVQQDDA1EdWNrRGV2IFRvb2xzMB4XDTI1MDYyNzAyNTY0M1oX
+# DTI2MDYyNzAzMTY0M1owGDEWMBQGA1UEAwwNRHVja0RldiBUb29sczCCASIwDQYJ
+# KoZIhvcNAQEBBQADggEPADCCAQoCggEBAKn4Kp9OE2fKY7IgOxgVryfIA2r9+xSj
+# RrqgXPquezWZEFz/XWm1ULBTxf3Ij6JOYKcNb7xdjEceAWEOLnisQTd4DLsNum3N
+# CBfWEiJwkwdSdwQ/imwNluRl6ouM5odNc9gimUpOj96bHoqKCzbw/AuEi5EKF/KU
+# rHbYvKnSj+4aWRzgtFaqYXMhDNuxrGdTFVJUgbwRkSDH7Yk8PCQVzPLD9G8DekZf
+# X/VMamAH5eU39Awg8RljBXYYyi/dlOrjkvO9wTt/eciqsMqdzC2rTjBJwovNnBTM
+# i82cugjUQq0JeMewACStnH8uPbHhloVAaDDCM6o4gWcxgP3+Fg+nOVkCAwEAAaNG
+# MEQwDgYDVR0PAQH/BAQDAgeAMBMGA1UdJQQMMAoGCCsGAQUFBwMDMB0GA1UdDgQW
+# BBRqedNOpH/kDJiAX69bLw20ATSysTANBgkqhkiG9w0BAQsFAAOCAQEApP7dLlux
+# WBqwC1ZZSTR2yCWsTptUieXUP7zNuCS0zjU9aChbZS/zMBpsJ1Y93KhOW9yso7o+
+# gRyJdOZrJWOyWsLeSEPcBMIl1PqvShv4QhcJ/fd0la5VlmXpeW2xvpZ+JaLqljm6
+# xSXrxoA7sS5b7ixBmAGinqPUuZXswxVSsjxvQHUcDiRs1kQdRATZULPQ55viYCpd
+# v0+i/rFZDDkUvHLy3ZVNIKfUEzt7hOOrDPhBjFdoLbcG3RDQ+E/xHLOIxLsxXFQm
+# XgX5AkK3rvQGRlM/CAtnyHJVvckuOCzkcWBfmYNvre63g4oDGCAhJnpxQy9F8Bse
+# I2ZVOAlcgTVG0TGCAc0wggHJAgEBMCwwGDEWMBQGA1UEAwwNRHVja0RldiBUb29s
+# cwIQNpJ3aGZvmopKsMhVmpuZUDAJBgUrDgMCGgUAoHgwGAYKKwYBBAGCNwIBDDEK
+# MAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEEAYI3
+# AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQUMclOgRAqranqOTCx
+# KcnKMDpg6igwDQYJKoZIhvcNAQEBBQAEggEAjsx03xrVUnL4TW/CFdOCEkrucDqw
+# JmU0DbmwIWhWwbPzx50BWvpee7x/VfQPHOC7QZwugH7vSQKs5LrjcsdMLDYwqGfw
+# YfTCarXNbdNzdL3xd0E6wOsnW4VY93d6OzVK4mwOeZ3Cc6zDcTDbuDbekZglHL0X
+# 0AKmxu9R5vkaeNRRT5OsQPtcfpnRPqITqu5i1Ie1LTPGYMYTjZUuGERTGXuYuGBL
+# z6pUPGzcJRZesNjB+qVT4A9wy/QGgj8tm7DLBcHw92DVicFNhYapwqjKx7xeOf2d
+# v9k9f7KVMYCnhNoDXx8Aa2zwhLC9W4kS+mVc9sy3fFBv9OWqMV4oxJ9IhA==
+# SIG # End signature block
